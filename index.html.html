@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fleur & Co — Sistema de Pedidos</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #f5f0e8;
+    --dark: #1a1612;
+    --muted: #6b5e52;
+    --accent: #c9a96e;
+    --rose: #d4848a;
+    --green: #7a9e7e;
+    --border: rgba(180,160,130,0.2);
+    --glass: rgba(245,240,232,0.85);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--dark);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(201,169,110,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(212,132,138,0.06) 0%, transparent 60%),
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c9a96e' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* HEADER */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    font-weight: 300;
+    letter-spacing: 0.15em;
+    color: var(--dark);
+  }
+
+  .logo span { color: var(--accent); font-style: italic; }
+
+  .header-badge {
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+  }
+
+  /* HERO */
+  .hero {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 5rem 2rem 3rem;
+  }
+
+  .hero-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+  }
+
+  .hero-label::before, .hero-label::after {
+    content: '';
+    width: 30px;
+    height: 1px;
+    background: var(--accent);
+    opacity: 0.5;
+  }
+
+  .hero h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 300;
+    line-height: 1.1;
+    color: var(--dark);
+    margin-bottom: 1rem;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .hero p {
+    font-size: 0.95rem;
+    color: var(--muted);
+    max-width: 400px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  /* TABS */
+  .tabs {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    margin: 0 auto 3rem;
+    max-width: 500px;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 0.65rem 1rem;
+    border: none;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    color: var(--muted);
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.25s ease;
+    letter-spacing: 0.02em;
+  }
+
+  .tab.active {
+    background: var(--dark);
+    color: var(--cream);
+  }
+
+  /* MAIN CONTENT */
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 1.5rem 4rem;
+  }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* CATALOG */
+  .catalog-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .catalog-header h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2rem;
+    font-weight: 300;
+    margin-bottom: 0.5rem;
+  }
+
+  .catalog-header p {
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .categories {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+
+  .cat-btn {
+    padding: 0.4rem 1rem;
+    border: 1px solid var(--border);
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    color: var(--muted);
+    cursor: pointer;
+    border-radius: 20px;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+
+  .cat-btn.active, .cat-btn:hover {
+    background: var(--dark);
+    color: var(--cream);
+    border-color: var(--dark);
+  }
+
+  .products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.2rem;
+  }
+
+  .product-card {
+    background: rgba(255,255,255,0.7);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+    animation: fadeUp 0.4s ease forwards;
+    opacity: 0;
+  }
+
+  .product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(26,22,18,0.08);
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .product-img {
+    height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .product-img::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent 50%, rgba(255,255,255,0.3));
+  }
+
+  .product-info { padding: 1rem 1.2rem 1.2rem; }
+
+  .product-tag {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.3rem;
+  }
+
+  .product-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    font-weight: 400;
+    margin-bottom: 0.3rem;
+    color: var(--dark);
+  }
+
+  .product-desc {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+  }
+
+  .product-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .product-price {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--dark);
+  }
+
+  .add-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--dark);
+    color: var(--cream);
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, transform 0.2s;
+  }
+
+  .add-btn:hover { background: var(--accent); transform: scale(1.1); }
+
+  /* CART BADGE */
+  .cart-float {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 200;
+    background: var(--dark);
+    color: var(--cream);
+    border: none;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    font-size: 1.4rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(26,22,18,0.3);
+    transition: transform 0.2s;
+  }
+
+  .cart-float:hover { transform: scale(1.08); }
+
+  .cart-count {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: var(--rose);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    display: none;
+  }
+
+  /* BOOKING */
+  .booking-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+
+  @media (max-width: 600px) {
+    .booking-layout { grid-template-columns: 1fr; }
+    .products-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  .booking-card {
+    background: rgba(255,255,255,0.7);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem;
+  }
+
+  .booking-card h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-weight: 300;
+    margin-bottom: 0.3rem;
+  }
+
+  .booking-card .sub {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 1.8rem;
+  }
+
+  .field { margin-bottom: 1.2rem; }
+
+  .field label {
+    display: block;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .field input, .field select, .field textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: rgba(255,255,255,0.8);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    color: var(--dark);
+    outline: none;
+    transition: border-color 0.2s;
+    appearance: none;
+  }
+
+  .field input:focus, .field select:focus, .field textarea:focus {
+    border-color: var(--accent);
+  }
+
+  .field textarea { resize: none; height: 80px; }
+
+  .time-slots {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+
+  .slot {
+    padding: 0.5rem;
+    text-align: center;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: rgba(255,255,255,0.6);
+  }
+
+  .slot:hover, .slot.selected {
+    background: var(--dark);
+    color: var(--cream);
+    border-color: var(--dark);
+  }
+
+  .slot.unavailable {
+    opacity: 0.35;
+    cursor: not-allowed;
+    text-decoration: line-through;
+  }
+
+  .btn-primary {
+    width: 100%;
+    padding: 0.9rem;
+    background: var(--dark);
+    color: var(--cream);
+    border: none;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+    margin-top: 1.5rem;
+  }
+
+  .btn-primary:hover { background: var(--accent); transform: translateY(-1px); }
+
+  /* SUMMARY CARD */
+  .summary-card {
+    background: var(--dark);
+    color: var(--cream);
+    border-radius: 20px;
+    padding: 2rem;
+  }
+
+  .summary-card h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-weight: 300;
+    margin-bottom: 0.3rem;
+  }
+
+  .summary-card .sub {
+    font-size: 0.8rem;
+    color: rgba(245,240,232,0.5);
+    margin-bottom: 1.8rem;
+  }
+
+  .summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    font-size: 0.85rem;
+  }
+
+  .summary-item:last-of-type { border-bottom: none; }
+
+  .summary-item .name { color: rgba(245,240,232,0.8); }
+  .summary-item .price { color: var(--accent); font-weight: 500; }
+
+  .summary-total {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255,255,255,0.15);
+    display: flex;
+    justify-content: space-between;
+    font-size: 1rem;
+    font-weight: 500;
+  }
+
+  .summary-total .t-price { color: var(--accent); font-size: 1.2rem; }
+
+  .whatsapp-preview {
+    margin-top: 1.5rem;
+    background: rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 1rem;
+  }
+
+  .whatsapp-preview .wp-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(245,240,232,0.4);
+    margin-bottom: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .wp-bubble {
+    background: #25D366;
+    border-radius: 12px 12px 12px 4px;
+    padding: 0.8rem 1rem;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    color: #fff;
+    max-width: 90%;
+  }
+
+  /* SUCCESS */
+  .success-screen {
+    display: none;
+    text-align: center;
+    padding: 4rem 2rem;
+    animation: fadeUp 0.5s ease forwards;
+  }
+
+  .success-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .success-screen h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.2rem;
+    font-weight: 300;
+    margin-bottom: 0.8rem;
+  }
+
+  .success-screen p {
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.7;
+    max-width: 380px;
+    margin: 0 auto 2rem;
+  }
+
+  /* CART MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(26,22,18,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 300;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--cream);
+    border-radius: 24px 24px 0 0;
+    padding: 2rem;
+    width: 100%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: slideUp 0.3s ease;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .modal-header h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    font-weight: 300;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--muted);
+  }
+
+  .cart-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cart-item-emoji { font-size: 2rem; }
+
+  .cart-item-info { flex: 1; }
+  .cart-item-name { font-size: 0.9rem; font-weight: 500; }
+  .cart-item-price { font-size: 0.82rem; color: var(--muted); }
+
+  .qty-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .qty-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .qty-btn:hover { background: var(--dark); color: var(--cream); border-color: var(--dark); }
+
+  .qty-num { font-size: 0.9rem; font-weight: 500; min-width: 20px; text-align: center; }
+
+  /* POWERED BY */
+  .powered {
+    position: fixed;
+    bottom: 0.8rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(107,94,82,0.4);
+    z-index: 10;
+  }
+
+  .powered span { color: var(--accent); }
+
+  /* Animations on load */
+  .hero { animation: fadeUp 0.6s ease forwards; }
+  .tabs { animation: fadeUp 0.6s 0.1s ease both; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Fleur <span>&</span> Co</div>
+  <div class="header-badge">Arequipa · Perú</div>
+</header>
+
+<div class="hero">
+  <div class="hero-label">Bienvenida</div>
+  <h1>Flores que <em>hablan</em><br>por ti</h1>
+  <p>Ramos, arreglos y obsequios para cada momento especial. Pedidos con entrega o recojo en tienda.</p>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('catalog')">🌸 Catálogo</button>
+  <button class="tab" onclick="switchTab('booking')">📅 Reservar</button>
+  <button class="tab" onclick="switchTab('tracking')">📦 Mi pedido</button>
+</div>
+
+<div class="container">
+
+  <!-- CATALOG -->
+  <div class="section active" id="catalog">
+    <div class="catalog-header">
+      <h2>Nuestros arreglos</h2>
+      <p>Elaborados a mano · Entrega en Arequipa</p>
+    </div>
+    <div class="categories">
+      <button class="cat-btn active" onclick="filterCat('all', this)">Todo</button>
+      <button class="cat-btn" onclick="filterCat('ramos', this)">Ramos</button>
+      <button class="cat-btn" onclick="filterCat('arreglos', this)">Arreglos</button>
+      <button class="cat-btn" onclick="filterCat('obsequios', this)">Obsequios</button>
+      <button class="cat-btn" onclick="filterCat('licores', this)">Licores</button>
+    </div>
+    <div class="products-grid" id="products-grid"></div>
+  </div>
+
+  <!-- BOOKING -->
+  <div class="section" id="booking">
+    <div class="booking-layout">
+      <div>
+        <div class="booking-card">
+          <h3>Reserva tu pedido</h3>
+          <p class="sub">Personaliza y elige cuándo lo recibes</p>
+
+          <div class="field">
+            <label>Tu nombre</label>
+            <input type="text" id="nombre" placeholder="Ej. María Fernanda" oninput="updateSummary()">
+          </div>
+          <div class="field">
+            <label>WhatsApp</label>
+            <input type="tel" id="telefono" placeholder="+51 999 999 999" oninput="updateSummary()">
+          </div>
+          <div class="field">
+            <label>Tipo de entrega</label>
+            <select id="entrega" onchange="updateSummary()">
+              <option value="">Selecciona...</option>
+              <option value="recojo">Recojo en tienda (gratis)</option>
+              <option value="delivery">Delivery Arequipa (+S/ 15)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Fecha</label>
+            <input type="date" id="fecha" oninput="updateSummary()">
+          </div>
+          <div class="field">
+            <label>Horario disponible</label>
+            <div class="time-slots">
+              <div class="slot unavailable">9:00</div>
+              <div class="slot" onclick="selectSlot(this)">10:00</div>
+              <div class="slot" onclick="selectSlot(this)">11:00</div>
+              <div class="slot unavailable">12:00</div>
+              <div class="slot" onclick="selectSlot(this)">14:00</div>
+              <div class="slot" onclick="selectSlot(this)">15:00</div>
+              <div class="slot" onclick="selectSlot(this)">16:00</div>
+              <div class="slot" onclick="selectSlot(this)">17:00</div>
+              <div class="slot unavailable">18:00</div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Mensaje para la tarjeta (opcional)</label>
+            <textarea id="mensaje" placeholder="Ej. Con todo mi amor para ti..." oninput="updateSummary()"></textarea>
+          </div>
+          <button class="btn-primary" onclick="confirmarPedido()">Confirmar pedido →</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="summary-card">
+          <h3>Resumen</h3>
+          <p class="sub">Tu pedido actual</p>
+          <div id="summary-items">
+            <div style="font-size:0.82rem; color:rgba(245,240,232,0.4); text-align:center; padding: 1rem 0;">
+              Agrega productos desde el catálogo
+            </div>
+          </div>
+          <div class="summary-total" id="summary-total" style="display:none">
+            <span>Total</span>
+            <span class="t-price" id="total-price">S/ 0</span>
+          </div>
+
+          <div class="whatsapp-preview">
+            <div class="wp-label">📱 Recordatorio automático</div>
+            <div class="wp-bubble" id="wp-preview">
+              Hola <strong>—</strong>, tu pedido en <strong>Fleur & Co</strong> está confirmado para mañana. ¡Te esperamos! 🌸
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRACKING -->
+  <div class="section" id="tracking">
+    <div style="max-width:480px; margin:0 auto;">
+      <div class="booking-card" style="text-align:center;">
+        <div style="font-size:3rem; margin-bottom:1rem;">🔍</div>
+        <h3>Rastrea tu pedido</h3>
+        <p class="sub">Ingresa tu número de pedido o teléfono</p>
+        <div class="field" style="text-align:left">
+          <label>Número de pedido o WhatsApp</label>
+          <input type="text" placeholder="Ej. #2847 o +51 999..." id="track-input">
+        </div>
+        <button class="btn-primary" onclick="trackOrder()">Buscar pedido →</button>
+      </div>
+
+      <div id="track-result" style="display:none; margin-top:1.5rem;">
+        <div class="booking-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+            <div>
+              <div style="font-size:0.7rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--accent); margin-bottom:0.3rem;">Pedido #2847</div>
+              <div style="font-family:'Cormorant Garamond',serif; font-size:1.2rem;">Ramo Romántico + Vino</div>
+            </div>
+            <div style="background:#e8f5e9; color:#2e7d32; font-size:0.72rem; padding:0.3rem 0.8rem; border-radius:20px; font-weight:500;">En preparación</div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:0.8rem;">
+            <div style="display:flex; gap:1rem; align-items:center;">
+              <div style="width:32px; height:32px; border-radius:50%; background:var(--green); display:flex; align-items:center; justify-content:center; font-size:0.9rem; flex-shrink:0;">✓</div>
+              <div><div style="font-size:0.85rem; font-weight:500;">Pedido recibido</div><div style="font-size:0.75rem; color:var(--muted);">Hoy, 10:32 am</div></div>
+            </div>
+            <div style="display:flex; gap:1rem; align-items:center;">
+              <div style="width:32px; height:32px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; font-size:0.9rem; flex-shrink:0;">✦</div>
+              <div><div style="font-size:0.85rem; font-weight:500;">En preparación</div><div style="font-size:0.75rem; color:var(--muted);">Estimado: 2:00 pm</div></div>
+            </div>
+            <div style="display:flex; gap:1rem; align-items:center; opacity:0.35;">
+              <div style="width:32px; height:32px; border-radius:50%; border:2px dashed var(--border); display:flex; align-items:center; justify-content:center; font-size:0.9rem; flex-shrink:0;">○</div>
+              <div><div style="font-size:0.85rem; font-weight:500;">Listo para entrega</div><div style="font-size:0.75rem; color:var(--muted);">Pendiente</div></div>
+            </div>
+            <div style="display:flex; gap:1rem; align-items:center; opacity:0.35;">
+              <div style="width:32px; height:32px; border-radius:50%; border:2px dashed var(--border); display:flex; align-items:center; justify-content:center; font-size:0.9rem; flex-shrink:0;">○</div>
+              <div><div style="font-size:0.85rem; font-weight:500;">Entregado 🎉</div><div style="font-size:0.75rem; color:var(--muted);">Pendiente</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- SUCCESS -->
+<div class="success-screen" id="success">
+  <div class="success-icon">🌸</div>
+  <h2>¡Pedido confirmado!</h2>
+  <p>Te enviamos un mensaje por WhatsApp con todos los detalles. Recibirás un recordatorio automático el día de tu entrega.</p>
+  <button class="btn-primary" style="max-width:260px; margin:0 auto;" onclick="resetForm()">Hacer otro pedido</button>
+</div>
+
+<!-- CART BUTTON -->
+<button class="cart-float" onclick="openCart()">
+  🛒
+  <span class="cart-count" id="cart-count">0</span>
+</button>
+
+<!-- CART MODAL -->
+<div class="modal-overlay" id="cart-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Tu carrito</h3>
+      <button class="close-btn" onclick="closeCart()">✕</button>
+    </div>
+    <div id="cart-items-list"></div>
+    <div id="cart-total-row" style="display:none; padding-top:1rem; border-top:1px solid var(--border); display:flex; justify-content:space-between; font-weight:500; margin-top:1rem;">
+      <span>Total</span>
+      <span id="cart-total-display" style="color:var(--accent)">S/ 0</span>
+    </div>
+    <button class="btn-primary" onclick="goToBooking()">Proceder al pedido →</button>
+  </div>
+</div>
+
+<div class="powered">Powered by <span>Nexora</span></div>
+
+<script>
+const products = [
+  { id:1, name:'Ramo Romántico', desc:'15 rosas rojas con eucalipto y paper', price:89, emoji:'💐', cat:'ramos', bg:'#fce4ec' },
+  { id:2, name:'Ramo Primaveral', desc:'Flores mixtas de temporada con cinta de seda', price:65, emoji:'🌷', cat:'ramos', bg:'#f3e5f5' },
+  { id:3, name:'Ramo Blanco Puro', desc:'Liliums blancos, gypsophila y hojas verdes', price:75, emoji:'🤍', cat:'ramos', bg:'#f5f5f5' },
+  { id:4, name:'Arreglo Jardín', desc:'Centro floral en base de madera rústica', price:120, emoji:'🌺', cat:'arreglos', bg:'#e8f5e9' },
+  { id:5, name:'Arreglo Luxury', desc:'Orquídeas y rosas premium en jarrón de cristal', price:185, emoji:'🪷', cat:'arreglos', bg:'#fce4ec' },
+  { id:6, name:'Carrito de Peluche', desc:'Osito teddy con ramo pequeño y lazo', price:95, emoji:'🧸', cat:'obsequios', bg:'#fff8e1' },
+  { id:7, name:'Caja Sorpresa', desc:'Caja kraft con flores, chocolate y tarjeta', price:110, emoji:'🎁', cat:'obsequios', bg:'#fbe9e7' },
+  { id:8, name:'Vino Rosé + Ramo', desc:'Botella importada con ramo de 6 rosas', price:145, emoji:'🍷', cat:'licores', bg:'#fce4ec' },
+  { id:9, name:'Pack Celebración', desc:'Champagne + arreglo floral + peluche', price:220, emoji:'🥂', cat:'licores', bg:'#e8eaf6' },
+];
+
+let cart = {};
+let currentCat = 'all';
+
+function renderProducts(cat) {
+  const grid = document.getElementById('products-grid');
+  const filtered = cat === 'all' ? products : products.filter(p => p.cat === cat);
+  grid.innerHTML = filtered.map((p, i) => `
+    <div class="product-card" style="animation-delay:${i*0.05}s" data-id="${p.id}">
+      <div class="product-img" style="background:${p.bg}">${p.emoji}</div>
+      <div class="product-info">
+        <div class="product-tag">${p.cat}</div>
+        <div class="product-name">${p.name}</div>
+        <div class="product-desc">${p.desc}</div>
+        <div class="product-footer">
+          <div class="product-price">S/ ${p.price}</div>
+          <button class="add-btn" onclick="addToCart(${p.id})">+</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterCat(cat, btn) {
+  currentCat = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderProducts(cat);
+}
+
+function addToCart(id) {
+  cart[id] = (cart[id] || 0) + 1;
+  updateCartUI();
+  // Pulse animation
+  const btn = document.querySelector(`[data-id="${id}"] .add-btn`);
+  if(btn) { btn.style.background = '#7a9e7e'; setTimeout(() => btn.style.background = '', 300); }
+}
+
+function updateCartUI() {
+  const total = Object.entries(cart).reduce((s,[id,qty]) => {
+    const p = products.find(x => x.id == id);
+    return s + (p ? p.price * qty : 0);
+  }, 0);
+  const count = Object.values(cart).reduce((s,v) => s+v, 0);
+  const countEl = document.getElementById('cart-count');
+  countEl.textContent = count;
+  countEl.style.display = count > 0 ? 'flex' : 'none';
+  updateSummary();
+}
+
+function openCart() {
+  const list = document.getElementById('cart-items-list');
+  if(Object.keys(cart).length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem;">Tu carrito está vacío</div>';
+  } else {
+    list.innerHTML = Object.entries(cart).map(([id,qty]) => {
+      const p = products.find(x => x.id == id);
+      return `<div class="cart-item">
+        <div class="cart-item-emoji">${p.emoji}</div>
+        <div class="cart-item-info">
+          <div class="cart-item-name">${p.name}</div>
+          <div class="cart-item-price">S/ ${p.price} c/u</div>
+        </div>
+        <div class="qty-control">
+          <button class="qty-btn" onclick="changeQty(${id},-1)">−</button>
+          <span class="qty-num">${qty}</span>
+          <button class="qty-btn" onclick="changeQty(${id},1)">+</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  const total = Object.entries(cart).reduce((s,[id,qty]) => {
+    const p = products.find(x => x.id == id);
+    return s + (p ? p.price * qty : 0);
+  }, 0);
+  document.getElementById('cart-total-display').textContent = `S/ ${total}`;
+  document.getElementById('cart-modal').classList.add('open');
+}
+
+function changeQty(id, delta) {
+  cart[id] = (cart[id] || 0) + delta;
+  if(cart[id] <= 0) delete cart[id];
+  updateCartUI();
+  openCart();
+}
+
+function closeCart() {
+  document.getElementById('cart-modal').classList.remove('open');
+}
+
+function goToBooking() {
+  closeCart();
+  switchTab('booking');
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(tab).classList.add('active');
+  document.querySelectorAll('.tab')[['catalog','booking','tracking'].indexOf(tab)].classList.add('active');
+  document.getElementById('success').style.display = 'none';
+}
+
+function selectSlot(el) {
+  document.querySelectorAll('.slot').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+  updateSummary();
+}
+
+function updateSummary() {
+  const nombre = document.getElementById('nombre')?.value || '';
+  const entrega = document.getElementById('entrega')?.value || '';
+  const itemsEl = document.getElementById('summary-items');
+  const totalEl = document.getElementById('summary-total');
+  const totalPrice = document.getElementById('total-price');
+  const wpPreview = document.getElementById('wp-preview');
+
+  let items = Object.entries(cart).map(([id,qty]) => {
+    const p = products.find(x => x.id == id);
+    return `<div class="summary-item"><span class="name">${p.emoji} ${p.name} ×${qty}</span><span class="price">S/ ${p.price * qty}</span></div>`;
+  }).join('');
+
+  let total = Object.entries(cart).reduce((s,[id,qty]) => {
+    const p = products.find(x => x.id == id);
+    return s + (p ? p.price * qty : 0);
+  }, 0);
+
+  if(entrega === 'delivery') {
+    items += `<div class="summary-item"><span class="name">🚚 Delivery</span><span class="price">S/ 15</span></div>`;
+    total += 15;
+  }
+
+  if(items) {
+    itemsEl.innerHTML = items;
+    totalEl.style.display = 'flex';
+    totalPrice.textContent = `S/ ${total}`;
+  } else {
+    itemsEl.innerHTML = '<div style="font-size:0.82rem; color:rgba(245,240,232,0.4); text-align:center; padding: 1rem 0;">Agrega productos desde el catálogo</div>';
+    totalEl.style.display = 'none';
+  }
+
+  const displayName = nombre || '—';
+  wpPreview.innerHTML = `Hola <strong>${displayName}</strong>, tu pedido en <strong>Fleur & Co</strong> está confirmado. Te esperamos mañana 🌸`;
+}
+
+function confirmarPedido() {
+  const nombre = document.getElementById('nombre').value;
+  const telefono = document.getElementById('telefono').value;
+  const entrega = document.getElementById('entrega').value;
+  const fecha = document.getElementById('fecha').value;
+  const slot = document.querySelector('.slot.selected');
+
+  if(!nombre || !telefono || !entrega || !fecha || !slot) {
+    alert('Por favor completa todos los campos y selecciona un horario.');
+    return;
+  }
+
+  document.getElementById('booking').style.display = 'none';
+  const success = document.getElementById('success');
+  success.style.display = 'block';
+  cart = {};
+  updateCartUI();
+}
+
+function resetForm() {
+  document.getElementById('success').style.display = 'none';
+  document.getElementById('booking').style.display = 'block';
+  switchTab('catalog');
+}
+
+function trackOrder() {
+  const input = document.getElementById('track-input').value;
+  if(input.length > 2) {
+    document.getElementById('track-result').style.display = 'block';
+  }
+}
+
+// Init
+renderProducts('all');
+
+// Set min date to today
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('fecha').min = today;
+</script>
+</body>
+</html>
